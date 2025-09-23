@@ -15,16 +15,17 @@ fun main() {
     println("Opened ${name}")
     val iterator : Iterator<ZipEntry> = zipFile.entries().asIterator()
     val fileDNA : DNA = mutableListOf()
-    while (iterator.hasNext()){
-        val entry : ZipEntry = iterator.next()
-        fileDNA.add(
-            FileFingerPrint(
-                entry.name,
-                entry.size,
-                hashZipEntry(zipFile, entry)
-            )
-        )
-    }
+    processZip(zipFile, fileDNA)
+//    while (iterator.hasNext()){
+//        val entry : ZipEntry = iterator.next()
+//        fileDNA.add(
+//            FileFingerPrint(
+//                entry.name,
+//                entry.size,
+//                hashZipEntry(zipFile, entry)
+//            )
+//        )
+//    }
     fileDNA.println()
 }
 
@@ -49,3 +50,35 @@ fun hashZipEntry(zipFile : ZipFile, entry : ZipEntry, algorithm : String = "SHA-
     // Hash the digest as convert to understandable hex
     return digest.digest().joinToString("") {"%02x".format(it)}
 }
+
+fun processZip(zipFile: ZipFile, dna: DNA, prefix: String = "") {
+    val iterator = zipFile.entries().asIterator()
+    while (iterator.hasNext()) {
+        val entry = iterator.next()
+        val path = "$prefix${entry.name}"
+
+        if (entry.isDirectory) continue
+
+        // Record this entry
+        dna.add(FileFingerPrint(path, entry.size, hashZipEntry(zipFile, entry)))
+
+        // If the entry is a .jar, open it as a nested Zip using recursion
+        if (entry.name.endsWith(".jar")) {
+            zipFile.getInputStream(entry).use { input ->
+                val nestedBytes = input.readBytes()
+                ZipFile(tempJar(nestedBytes)).use { nestedZip ->
+                    processZip(nestedZip, dna, "$path!")
+                }
+            }
+        }
+    }
+}
+
+// Helper: write bytes to a temp file for ZipFile to open
+fun tempJar(bytes: ByteArray): java.io.File {
+    val tmp = kotlin.io.path.createTempFile(suffix = ".jar").toFile()
+    tmp.writeBytes(bytes)
+    tmp.deleteOnExit()
+    return tmp
+}
+
