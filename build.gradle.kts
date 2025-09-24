@@ -11,6 +11,8 @@ repositories {
 
 dependencies {
     testImplementation(kotlin("test"))
+    implementation("org.ow2.asm:asm:9.5")
+    implementation("org.ow2.asm:asm-tree:9.5")
 }
 
 tasks.test {
