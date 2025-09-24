@@ -1,6 +1,8 @@
 plugins {
     kotlin("jvm") version "2.0.10"
     kotlin("plugin.serialization") version "1.9.24"
+    id("com.github.johnrengelman.shadow") version "8.1.1"
+    application
 }
 
 group = "org.example"
@@ -20,6 +22,11 @@ dependencies {
 tasks.test {
     useJUnitPlatform()
 }
+
 kotlin {
     jvmToolchain(21)
+}
+
+application {
+    mainClass.set("org.example.MainKt")
 }
