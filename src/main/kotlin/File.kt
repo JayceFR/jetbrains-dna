@@ -10,12 +10,30 @@ enum class FileType{
 }
 
 @Serializable
+data class DNA(
+    val classNames: Set<String>,
+    val methodNames: Set<String>,
+    val fieldNames: Set<String>,
+    val packageNames: Set<String>,
+    val summary: SummaryStats,
+    val files : List<File>
+)
+
+@Serializable
+data class SummaryStats(
+    val totalFiles: Int,
+    val totalClasses: Int,
+    val totalMethods: Int,
+    val totalFields: Int
+)
+
+@Serializable
 data class File(
     val fileName : String,
     val size : Long,
     val hash : String,
     val type : FileType,
-    var classInfo: ClassInfo? = null
+//    var classInfo: ClassInfo? = null
 )
 
 @Serializable

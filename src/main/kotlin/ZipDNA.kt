@@ -19,8 +19,15 @@ class ZipDNA(
     // The name of the zip file
     val name : String = zipFile.name.substringBefore(".zip").substringAfterLast("\\")
 
-    // All the files inside the zipFile
-    val files : MutableList<File> = mutableListOf()
+    private val files : MutableList<File> = mutableListOf()
+    private val classNames: MutableSet<String> = mutableSetOf()
+    private val methodNames: MutableSet<String> = mutableSetOf()
+    private val fieldNames: MutableSet<String> = mutableSetOf()
+    private val packageNames: MutableSet<String> = mutableSetOf()
+
+    private var totalClasses = 0
+    private var totalMethods = 0
+    private var totalFields = 0
 
     // Recursive function that tokenizes the zip folder into list of files
     fun tokenize(zFile: ZipFile = zipFile, prefix: String = "") {
@@ -31,21 +38,20 @@ class ZipDNA(
 
             if (entry.isDirectory) continue
 
-            val fileType = when{
+            val fileType = when {
                 entry.isDirectory -> FileType.FOLDER
                 entry.name.endsWith(".class") -> FileType.CLASS
                 entry.name.endsWith(".jar") -> FileType.JAR
                 else -> FileType.REGULAR_FILE
             }
 
-            val currFile : File = File(
+            val currFile = File(
                 path,
                 entry.size,
                 hashZipEntry(zFile, entry),
                 fileType
             )
 
-            // If the entry is a .jar, open it as a nested Zip using recursion
             if (fileType == FileType.JAR) {
                 zFile.getInputStream(entry).use { input ->
                     val nestedBytes = input.readBytes()
@@ -55,12 +61,23 @@ class ZipDNA(
                 }
             }
 
-            if (fileType == FileType.CLASS){
-                currFile.classInfo = parse(zFile.getInputStream(entry).use { it.readBytes() })
+            if (fileType == FileType.CLASS) {
+                val classInfo = parse(zFile.getInputStream(entry).use { it.readBytes() })
+
+                classInfo.let { classInfo ->
+                    classNames.add(classInfo.className)
+                    packageNames.add(classInfo.className.substringBeforeLast('.', ""))
+
+                    methodNames.addAll(classInfo.methods.map { it.name })
+                    fieldNames.addAll(classInfo.fields.map { it.name })
+
+                    totalClasses++
+                    totalMethods += classInfo.methods.size
+                    totalFields += classInfo.fields.size
+                }
             }
 
             files.add(currFile)
-
         }
     }
 
@@ -92,8 +109,25 @@ class ZipDNA(
         )
     }
 
-    fun writeToJSON(path : String){
-        val json = Json { prettyPrint = true }.encodeToString(files)
+    fun buildDNA(): DNA {
+        return DNA(
+            files = files,
+            classNames = classNames,
+            methodNames = methodNames,
+            fieldNames = fieldNames,
+            packageNames = packageNames,
+            summary = SummaryStats(
+                totalFiles = files.size,
+                totalClasses = totalClasses,
+                totalMethods = totalMethods,
+                totalFields = totalFields
+            )
+        )
+    }
+
+    fun writeToJSON(path: String) {
+        val dna = buildDNA()
+        val json = Json { prettyPrint = true }.encodeToString(dna)
         JFile(path).writeText(json)
     }
 
