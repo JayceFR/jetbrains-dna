@@ -12,6 +12,7 @@ data class File(
     val size : Long,
     val hash : String,
     val type : FileType,
+    var classInfo: ClassInfo? = null
 )
 
 data class ClassInfo(

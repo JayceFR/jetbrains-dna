@@ -32,13 +32,11 @@ class ZipDNA(
                 else -> FileType.REGULAR_FILE
             }
 
-            files.add(
-                File(
-                    path,
-                    entry.size,
-                    hashZipEntry(zFile, entry),
-                    fileType
-                )
+            val currFile : File = File(
+                path,
+                entry.size,
+                hashZipEntry(zFile, entry),
+                fileType
             )
 
             // If the entry is a .jar, open it as a nested Zip using recursion
@@ -52,8 +50,10 @@ class ZipDNA(
             }
 
             if (fileType == FileType.CLASS){
-                println(parse(zFile.getInputStream(entry).use { it.readBytes() }).toString())
+                currFile.classInfo = parse(zFile.getInputStream(entry).use { it.readBytes() })
             }
+
+            files.add(currFile)
 
         }
     }

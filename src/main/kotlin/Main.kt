@@ -9,6 +9,6 @@ fun main() {
 
     val dna : ZipDNA = ZipDNA(zipPath)
     dna.tokenize()
-//    dna.files.println()
+    dna.files.println()
 
 }
