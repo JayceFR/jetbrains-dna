@@ -9,6 +9,7 @@ fun main() {
 
     val dna : ZipDNA = ZipDNA(zipPath)
     dna.tokenize()
-    dna.files.println()
+
+    dna.writeToJSON("C:\\Users\\jayce\\Documents\\Scripts\\dna\\data\\out\\azure.json")
 
 }

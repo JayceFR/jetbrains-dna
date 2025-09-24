@@ -1,9 +1,15 @@
 package org.example
 
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.encodeToString
 import org.objectweb.asm.ClassReader
 import org.objectweb.asm.Opcodes
 import org.objectweb.asm.tree.ClassNode
 import java.util.zip.ZipFile
+
+import java.io.File as JFile
+
+
 
 class ZipDNA(
     private val zipPath : String
@@ -58,7 +64,7 @@ class ZipDNA(
         }
     }
 
-    fun parse(bytes : ByteArray) : ClassInfo{
+    private fun parse(bytes : ByteArray) : ClassInfo{
         val reader = ClassReader(bytes)
         val classNode = ClassNode()
         reader.accept(classNode, 0)
@@ -84,6 +90,11 @@ class ZipDNA(
             methods = methods,
             fields = fields
         )
+    }
+
+    fun writeToJSON(path : String){
+        val json = Json { prettyPrint = true }.encodeToString(files)
+        JFile(path).writeText(json)
     }
 
     private fun accessToString(access: Int): String {
