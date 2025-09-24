@@ -4,7 +4,7 @@ import java.security.MessageDigest
 import java.util.zip.ZipEntry
 import java.util.zip.ZipFile
 
-typealias DNA = MutableList<FileFingerPrint>
+typealias DNA = MutableList<File>
 //TIP To <b>Run</b> code, press <shortcut actionId="Run"/> or
 // click the <icon src="AllIcons.Actions.Execute"/> icon in the gutter.
 fun main() {
@@ -59,8 +59,21 @@ fun processZip(zipFile: ZipFile, dna: DNA, prefix: String = "") {
 
         if (entry.isDirectory) continue
 
-        // Record this entry
-        dna.add(FileFingerPrint(path, entry.size, hashZipEntry(zipFile, entry)))
+        val fileType = when{
+            entry.isDirectory -> FileType.FOLDER
+            entry.name.endsWith(".class") -> FileType.CLASS
+            entry.name.endsWith(".jar") -> FileType.JAR
+            else -> FileType.REGULAR_FILE
+        }
+
+        dna.add(
+            File(
+                path,
+                entry.size,
+                hashZipEntry(zipFile, entry),
+                fileType
+            )
+        )
 
         // If the entry is a .jar, open it as a nested Zip using recursion
         if (entry.name.endsWith(".jar")) {
