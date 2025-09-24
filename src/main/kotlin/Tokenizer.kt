@@ -1,5 +1,8 @@
 package org.example
 
+import org.objectweb.asm.ClassReader
+import org.objectweb.asm.Opcodes
+import org.objectweb.asm.tree.ClassNode
 import java.util.zip.ZipFile
 
 class ZipDNA(
@@ -39,7 +42,7 @@ class ZipDNA(
             )
 
             // If the entry is a .jar, open it as a nested Zip using recursion
-            if (entry.name.endsWith(".jar")) {
+            if (fileType == FileType.JAR) {
                 zFile.getInputStream(entry).use { input ->
                     val nestedBytes = input.readBytes()
                     ZipFile(tempJar(nestedBytes)).use { nestedZip ->
@@ -47,7 +50,51 @@ class ZipDNA(
                     }
                 }
             }
+
+            if (fileType == FileType.CLASS){
+                println(parse(zFile.getInputStream(entry).use { it.readBytes() }).toString())
+            }
+
         }
+    }
+
+    fun parse(bytes : ByteArray) : ClassInfo{
+        val reader = ClassReader(bytes)
+        val classNode = ClassNode()
+        reader.accept(classNode, 0)
+        val methods = classNode.methods.map {
+            MethodInfo(
+                it.name,
+                it.desc,
+                accessToString(it.access)
+            )
+        }
+        val fields = classNode.fields.map {
+            FieldInfo(
+                it.name,
+                it.desc,
+                accessToString(it.access)
+            )
+        }
+
+        return ClassInfo(
+            className = classNode.name.replace('/', '.'),
+            superClass = classNode.superName?.replace('/', '.'),
+            interfaces = classNode.interfaces.map { it.replace('/', '.') },
+            methods = methods,
+            fields = fields
+        )
+    }
+
+    private fun accessToString(access: Int): String {
+        val flags = mutableListOf<String>()
+        if (access and Opcodes.ACC_PUBLIC != 0) flags.add("public")
+        if (access and Opcodes.ACC_PRIVATE != 0) flags.add("private")
+        if (access and Opcodes.ACC_PROTECTED != 0) flags.add("protected")
+        if (access and Opcodes.ACC_STATIC != 0) flags.add("static")
+        if (access and Opcodes.ACC_FINAL != 0) flags.add("final")
+        if (access and Opcodes.ACC_ABSTRACT != 0) flags.add("abstract")
+        return flags.joinToString(" ")
     }
 
     // Function that write bytes to a temp file for ZipFile to open
