@@ -11,11 +11,11 @@ class ZipDNA(
     val name : String = zipFile.name.substringBefore(".zip").substringAfterLast("\\")
 
     // All the files inside the zipFile
-    private val files : MutableList<File> = mutableListOf()
+    val files : MutableList<File> = mutableListOf()
 
     // Recursive function that tokenizes the zip folder into list of files
-    fun tokenize(zipFile: ZipFile, prefix: String = "") {
-        val iterator = zipFile.entries().asIterator()
+    fun tokenize(zFile: ZipFile = zipFile, prefix: String = "") {
+        val iterator = zFile.entries().asIterator()
         while (iterator.hasNext()) {
             val entry = iterator.next()
             val path = "$prefix${entry.name}"
@@ -33,14 +33,14 @@ class ZipDNA(
                 File(
                     path,
                     entry.size,
-                    hashZipEntry(zipFile, entry),
+                    hashZipEntry(zFile, entry),
                     fileType
                 )
             )
 
             // If the entry is a .jar, open it as a nested Zip using recursion
             if (entry.name.endsWith(".jar")) {
-                zipFile.getInputStream(entry).use { input ->
+                zFile.getInputStream(entry).use { input ->
                     val nestedBytes = input.readBytes()
                     ZipFile(tempJar(nestedBytes)).use { nestedZip ->
                         tokenize(nestedZip, "$path!")
