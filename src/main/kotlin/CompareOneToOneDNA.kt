@@ -38,14 +38,38 @@ class CompareOneToOneDNA(
         val methodSimilarity = jaccard(dna1.methodNames, dna2.methodNames)
         val fieldSimilarity = jaccard(dna1.fieldNames, dna2.fieldNames)
 
+        val overallSimilarity = computeOverallSimilarity()
+
         return ComparisonResult(
             commonClasses, uniqueClasses1, uniqueClasses2,
             commonMethods, uniqueMethods1, uniqueMethods2,
             commonFields, uniqueFields1, uniqueFields2,
             commonPackages,
             commonFiles,
-            classSimilarity, methodSimilarity, fieldSimilarity
+            classSimilarity, methodSimilarity, fieldSimilarity, overallSimilarity
         )
+    }
+
+    fun computeOverallSimilarity(): Double {
+        // Weights: tune as you like
+        val weightFiles = 0.5
+        val weightClasses = 0.25
+        val weightMethods = 0.15
+        val weightFields = 0.1
+
+        val fileSimilarity = jaccard(
+            dna1.files.map { it.hash }.toSet(),
+            dna2.files.map { it.hash }.toSet()
+        )
+
+        val classSimilarity = jaccard(dna1.classNames, dna2.classNames)
+        val methodSimilarity = jaccard(dna1.methodNames, dna2.methodNames)
+        val fieldSimilarity = jaccard(dna1.fieldNames, dna2.fieldNames)
+
+        return (fileSimilarity * weightFiles
+                + classSimilarity * weightClasses
+                + methodSimilarity * weightMethods
+                + fieldSimilarity * weightFields)
     }
 
     private fun jaccard(a: Set<String>, b: Set<String>): Double {
@@ -72,5 +96,6 @@ data class ComparisonResult(
 
     val classSimilarity: Double,
     val methodSimilarity: Double,
-    val fieldSimilarity: Double
+    val fieldSimilarity: Double,
+    val overallSimilarity: Double
 )
