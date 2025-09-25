@@ -11,6 +11,8 @@ enum class FileType{
 
 @Serializable
 data class DNA(
+    val id : Int,
+    val bucketIndices : List<Int>,
     val classNames: Set<String>,
     val methodNames: Set<String>,
     val fieldNames: Set<String>,

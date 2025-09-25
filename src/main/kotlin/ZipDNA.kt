@@ -110,7 +110,7 @@ class ZipDNA(
         )
     }
 
-    fun computeMinHash(){
+    fun computeMinHash() : List<Int>{
         // Shingles
         val shingles = shinglise((classNames + fieldNames + methodNames), 3, 30)
         // Compute MinHash
@@ -124,7 +124,7 @@ class ZipDNA(
             bandKey.hashCode()
         }
 
-        println("Buckets: $bandBuckets")
+        return bandBuckets
 
     }
 
@@ -165,6 +165,8 @@ class ZipDNA(
 
     fun buildDNA(): DNA {
         return DNA(
+            id = 0,
+            bucketIndices = computeMinHash(),
             files = files,
             classNames = classNames,
             methodNames = methodNames,

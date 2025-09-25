@@ -63,7 +63,6 @@ fun main(){
 
     val dna : ZipDNA = ZipDNA(zipPath)
     dna.tokenize()
-    dna.computeMinHash()
     dna.writeToJSON(dart1Json)
 //
 //    val comparisonResult = CompareOneToOneDNA(dart1Json, dart2Json).compare()
