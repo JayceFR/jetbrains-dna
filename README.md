@@ -210,3 +210,10 @@ And running one to many for Azure we get
 > java -jar $jarPath compare-many .\data\out\azure.json
 No Matches Found! Good To Go! 
 ```
+
+---
+
+## References 
+
+- [MinHash and LSH](https://milvus.io/blog/minhash-lsh-in-milvus-the-secret-weapon-for-fighting-duplicates-in-llm-training-data.md)
+- [ASM](https://asm.ow2.io/asm4-guide.pdf)
