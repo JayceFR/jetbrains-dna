@@ -7,47 +7,37 @@ import org.objectweb.asm.Opcodes
 import org.objectweb.asm.tree.ClassNode
 import java.util.zip.ZipFile
 import kotlin.random.Random
-
 import java.io.File as JFile
 
-
-
 class ZipDNA(
-    private val zipPath : String,
-    private val globalPath : String = "Global.json"
-){
-    private val zipFile : ZipFile = ZipFile(zipPath)
-
-    // The name of the zip file
-    val name : String = zipFile.name.substringBefore(".zip").substringAfterLast("\\")
-
-    private val files : MutableList<File> = mutableListOf()
+    private val zipPath: String,
+    private val globalPath: String = "Global.json"
+) {
+    private val zipFile: ZipFile = ZipFile(zipPath)
+    val name: String = zipFile.name.substringBefore(".zip").substringAfterLast("\\")
+    private val files: MutableList<File> = mutableListOf()
     private val classNames: MutableSet<String> = mutableSetOf()
     private val methodNames: MutableSet<String> = mutableSetOf()
     private val fieldNames: MutableSet<String> = mutableSetOf()
     private val packageNames: MutableSet<String> = mutableSetOf()
-
     private var totalClasses = 0
     private var totalMethods = 0
     private var totalFields = 0
 
-    // Function to loadGlobal from the path
-    private fun loadGlobal(): Global{
+    private fun loadGlobal(): Global {
         val file = JFile(globalPath)
-        return if (file.exists()){
+        return if (file.exists()) {
             val text = file.readText()
             Json.decodeFromString(Global.serializer(), text)
-        } else{
-            Global()
-        }
+        } else Global()
     }
 
-    private fun saveGlobal(global : Global){
+    private fun saveGlobal(global: Global) {
         val json = Json { prettyPrint = true }.encodeToString(global)
         JFile(globalPath).writeText(json)
     }
 
-    private fun registerDNA(dna : DNA, path : String){
+    private fun registerDNA(dna: DNA, path: String) {
         val global = loadGlobal()
         val dnaId = global.noOfDNAs + 1
         dna.id = dnaId
@@ -59,28 +49,20 @@ class ZipDNA(
         saveGlobal(global)
     }
 
-    // Recursive function that tokenizes the zip folder into list of files
     fun tokenize(zFile: ZipFile = zipFile, prefix: String = "") {
         val iterator = zFile.entries().asIterator()
         while (iterator.hasNext()) {
             val entry = iterator.next()
             val path = "$prefix${entry.name}"
-
             if (entry.isDirectory) continue
 
             val fileType = when {
-                entry.isDirectory -> FileType.FOLDER
                 entry.name.endsWith(".class") -> FileType.CLASS
                 entry.name.endsWith(".jar") -> FileType.JAR
                 else -> FileType.REGULAR_FILE
             }
 
-            val currFile = File(
-                path,
-                entry.size,
-                hashZipEntry(zFile, entry),
-                fileType
-            )
+            val currFile = File(path, entry.size, hashZipEntry(zFile, entry), fileType)
 
             if (fileType == FileType.JAR) {
                 zFile.getInputStream(entry).use { input ->
@@ -93,43 +75,29 @@ class ZipDNA(
 
             if (fileType == FileType.CLASS) {
                 val classInfo = parse(zFile.getInputStream(entry).use { it.readBytes() })
-
-                classInfo.let { classInfo ->
-                    classNames.add(classInfo.className)
-                    packageNames.add(classInfo.className.substringBeforeLast('.', ""))
-
-                    methodNames.addAll(classInfo.methods.map { it.name })
-                    fieldNames.addAll(classInfo.fields.map { it.name })
-
-                    totalClasses++
-                    totalMethods += classInfo.methods.size
-                    totalFields += classInfo.fields.size
-                }
+                classNames.add(classInfo.className)
+                packageNames.add(classInfo.className.substringBeforeLast('.', ""))
+                methodNames.addAll(classInfo.methods.map { it.name })
+                fieldNames.addAll(classInfo.fields.map { it.name })
+                totalClasses++
+                totalMethods += classInfo.methods.size
+                totalFields += classInfo.fields.size
             }
 
             files.add(currFile)
         }
     }
 
-    private fun parse(bytes : ByteArray) : ClassInfo{
+    private fun parse(bytes: ByteArray): ClassInfo {
         val reader = ClassReader(bytes)
         val classNode = ClassNode()
         reader.accept(classNode, 0)
         val methods = classNode.methods.map {
-            MethodInfo(
-                it.name,
-                it.desc,
-                accessToString(it.access)
-            )
+            MethodInfo(it.name, it.desc, accessToString(it.access))
         }
         val fields = classNode.fields.map {
-            FieldInfo(
-                it.name,
-                it.desc,
-                accessToString(it.access)
-            )
+            FieldInfo(it.name, it.desc, accessToString(it.access))
         }
-
         return ClassInfo(
             className = classNode.name.replace('/', '.'),
             superClass = classNode.superName?.replace('/', '.'),
@@ -139,58 +107,42 @@ class ZipDNA(
         )
     }
 
-    fun computeMinHash() : List<Int>{
-        // Shingles
-        val shingles = shinglise((classNames + fieldNames + methodNames), 3, 30)
-        // Compute MinHash
-        val signature = minHash(shingles.toSet(), 128, 12345L).toList()
-        // LSH stuff
-        // Signature Segmentation
-        val NO_OF_BANDS = 32 // b
-        val bands = signature.chunked(signature.size / NO_OF_BANDS)
-        val bandBuckets : List<Int> = bands.mapIndexed{bandIndex, band ->
-            val bandKey = "$bandIndex:${band.joinToString(",")}"
-            bandKey.hashCode()
-        }
+    private fun computeMinHash(): List<Int> {
+        val tokens = classNames + methodNames + fieldNames
+        val shingles = shinglise(tokens, 3)                  // deterministic shingles
+        val signature = minHash(shingles, 128, 12345L).toList()      // minhash signature
 
-        return bandBuckets
-
+        val NO_OF_BANDS = 32
+        val bandSize = (signature.size / NO_OF_BANDS).coerceAtLeast(1)
+        val bands = signature.chunked(bandSize)
+        return bands.map { it.toLongArray().contentHashCode() }  // band hash buckets
     }
 
-    private fun <T> shinglise(tokens: Set<T>, k: Int, n: Int): List<Int> {
-        val shingles = tokens
-            .windowed(k, 1) // sliding window of size k
-            .map { it.hashCode() } // hash each shingle
-
-        return if (shingles.size >= n) {
-            shingles.shuffled().take(n) // downsample
+    private fun shinglise(tokens: Set<String>, k: Int): List<Int> {
+        val sortedTokens = tokens.toList().sorted()
+        return if (sortedTokens.size < k) {
+            sortedTokens.map { it.hashCode() }
         } else {
-            shingles + List(n - shingles.size) { 0 } // pad
+            sortedTokens.windowed(k, 1).map { shingle ->
+                shingle.joinToString("-").hashCode()
+            }
         }
     }
 
-    private fun minHash(shingles: Set<Int>, numHashes: Int, seed: Long = 0L): LongArray {
-        require(numHashes > 0) { "numHashes must be > 0" }
-
+    private fun minHash(shingles: List<Int>, numHashes: Int, seed: Long = 0L): LongArray {
         val rnd = Random(seed)
         val seeds = LongArray(numHashes) { rnd.nextLong() }
-
-        val signature = LongArray(numHashes) { -1L }
+        val signature = LongArray(numHashes) { Long.MAX_VALUE }
 
         for (shingle in shingles) {
-            val sh = shingle.toLong()
+            val sh = shingle.toLong() and 0xFFFFFFFFL
             for (i in 0 until numHashes) {
-                val combined = sh xor seeds[i] // 64-bit mixing
-                if (java.lang.Long.compareUnsigned(combined, signature[i]) < 0) {
-                    signature[i] = combined
-                }
+                val combined = sh xor seeds[i]
+                if (combined < signature[i]) signature[i] = combined
             }
         }
         return signature
     }
-
-
-
 
     private fun buildDNA(): DNA {
         return DNA(
@@ -228,13 +180,10 @@ class ZipDNA(
         return flags.joinToString(" ")
     }
 
-    // Function that write bytes to a temp file for ZipFile to open
     private fun tempJar(bytes: ByteArray): java.io.File {
         val tmp = kotlin.io.path.createTempFile(suffix = ".jar").toFile()
         tmp.writeBytes(bytes)
         tmp.deleteOnExit()
         return tmp
     }
-
-
 }
