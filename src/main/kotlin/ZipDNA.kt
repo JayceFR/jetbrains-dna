@@ -135,6 +135,7 @@ class ZipDNA(
         return DNA(
             id = 0,
             bucketIndices = computeMinHash(),
+            name = name,
             files = files,
             classNames = classNames,
             methodNames = methodNames,

@@ -13,6 +13,7 @@ enum class FileType{
 data class DNA(
     var id : Int,
     val bucketIndices : List<Int>,
+    val name : String,
     val classNames: Set<String>,
     val methodNames: Set<String>,
     val fieldNames: Set<String>,

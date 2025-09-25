@@ -41,6 +41,7 @@ class CompareOneToOneDNA(
         val overallSimilarity = computeOverallSimilarity()
 
         return ComparisonResult(
+            dna2.name,
             commonClasses, uniqueClasses1, uniqueClasses2,
             commonMethods, uniqueMethods1, uniqueMethods2,
             commonFields, uniqueFields1, uniqueFields2,
@@ -79,6 +80,8 @@ class CompareOneToOneDNA(
 }
 
 data class ComparisonResult(
+    val name : String,
+
     val commonClasses: Set<String>,
     val uniqueClasses1: Set<String>,
     val uniqueClasses2: Set<String>,
@@ -98,4 +101,42 @@ data class ComparisonResult(
     val methodSimilarity: Double,
     val fieldSimilarity: Double,
     val overallSimilarity: Double
-)
+) {
+    fun prettyPrint(): String {
+        fun formatSet(name: String, set: Set<String>): String =
+            "$name: ${set.size}"
+
+        return buildString {
+            appendLine("📊 Comparison Result with $name")
+            appendLine()
+            appendLine("🔹 Classes")
+            appendLine("   ${formatSet("Common", commonClasses)}")
+            appendLine("   ${formatSet("Unique (Project 1)", uniqueClasses1)}")
+            appendLine("   ${formatSet("Unique (Project 2)", uniqueClasses2)}")
+            appendLine()
+            appendLine("🔹 Methods")
+            appendLine("   ${formatSet("Common", commonMethods)}")
+            appendLine("   ${formatSet("Unique (Project 1)", uniqueMethods1)}")
+            appendLine("   ${formatSet("Unique (Project 2)", uniqueMethods2)}")
+            appendLine()
+            appendLine("🔹 Fields")
+            appendLine("   ${formatSet("Common", commonFields)}")
+            appendLine("   ${formatSet("Unique (Project 1)", uniqueFields1)}")
+            appendLine("   ${formatSet("Unique (Project 2)", uniqueFields2)}")
+            appendLine()
+            appendLine("🔹 Packages")
+            appendLine("   ${formatSet("Common", commonPackages)}")
+            appendLine()
+            appendLine("🔹 Files")
+            appendLine("   ${formatSet("Common", commonFiles)}")
+            appendLine()
+            appendLine("📈 Similarity Scores")
+            appendLine("   Classes: ${"%.2f".format(classSimilarity * 100)}%")
+            appendLine("   Methods: ${"%.2f".format(methodSimilarity * 100)}%")
+            appendLine("   Fields:  ${"%.2f".format(fieldSimilarity * 100)}%")
+            appendLine("   Overall: ${"%.2f".format(overallSimilarity * 100)}%")
+        }
+    }
+}
+
+
