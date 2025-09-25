@@ -13,7 +13,8 @@ import java.io.File as JFile
 
 
 class ZipDNA(
-    private val zipPath : String
+    private val zipPath : String,
+    private val globalPath : String = "Global.json"
 ){
     private val zipFile : ZipFile = ZipFile(zipPath)
 
@@ -29,6 +30,34 @@ class ZipDNA(
     private var totalClasses = 0
     private var totalMethods = 0
     private var totalFields = 0
+
+    // Function to loadGlobal from the path
+    private fun loadGlobal(): Global{
+        val file = JFile(globalPath)
+        return if (file.exists()){
+            val text = file.readText()
+            Json.decodeFromString(Global.serializer(), text)
+        } else{
+            Global()
+        }
+    }
+
+    private fun saveGlobal(global : Global){
+        val json = Json { prettyPrint = true }.encodeToString(global)
+        JFile(globalPath).writeText(json)
+    }
+
+    private fun registerDNA(dna : DNA, path : String){
+        val global = loadGlobal()
+        val dnaId = global.noOfDNAs + 1
+        dna.id = dnaId
+        global.aboutDNA[dnaId] = path
+        for (bucket in dna.bucketIndices) {
+            global.bucket.computeIfAbsent(bucket) { mutableListOf() }.add(dnaId)
+        }
+        global.noOfDNAs = dnaId
+        saveGlobal(global)
+    }
 
     // Recursive function that tokenizes the zip folder into list of files
     fun tokenize(zFile: ZipFile = zipFile, prefix: String = "") {
@@ -163,7 +192,7 @@ class ZipDNA(
 
 
 
-    fun buildDNA(): DNA {
+    private fun buildDNA(): DNA {
         return DNA(
             id = 0,
             bucketIndices = computeMinHash(),
@@ -183,6 +212,7 @@ class ZipDNA(
 
     fun writeToJSON(path: String) {
         val dna = buildDNA()
+        registerDNA(dna, path)
         val json = Json { prettyPrint = true }.encodeToString(dna)
         JFile(path).writeText(json)
     }
