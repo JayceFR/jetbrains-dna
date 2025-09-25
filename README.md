@@ -27,7 +27,7 @@ It supports:
 
 ## 🚀 Usage
 
-Download the standalone **shadow JAR** (`dna`) from [Releases](./releases).
+Download the standalone **shadow JAR** (`dna`) from [Releases](https://github.com/JayceFR/jetbrains-dna/releases).
 
 Run with:
 
