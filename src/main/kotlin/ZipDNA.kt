@@ -110,12 +110,22 @@ class ZipDNA(
         )
     }
 
-    private fun computeMinHash(){
+    fun computeMinHash(){
         // Shingles
         val shingles = shinglise((classNames + fieldNames + methodNames), 3, 30)
         // Compute MinHash
-        val signature = minHash(shingles.toSet(), 128, 12345L)
-        
+        val signature = minHash(shingles.toSet(), 128, 12345L).toList()
+        // LSH stuff
+        // Signature Segmentation
+        val NO_OF_BANDS = 32 // b
+        val bands = signature.chunked(signature.size / NO_OF_BANDS)
+        val bandBuckets : List<Int> = bands.mapIndexed{bandIndex, band ->
+            val bandKey = "$bandIndex:${band.joinToString(",")}"
+            bandKey.hashCode()
+        }
+
+        println("Buckets: $bandBuckets")
+
     }
 
     private fun <T> shinglise(tokens: Set<T>, k: Int, n: Int): List<Int> {
