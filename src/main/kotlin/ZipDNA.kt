@@ -6,6 +6,7 @@ import org.objectweb.asm.ClassReader
 import org.objectweb.asm.Opcodes
 import org.objectweb.asm.tree.ClassNode
 import java.util.zip.ZipFile
+import kotlin.random.Random
 
 import java.io.File as JFile
 
@@ -108,6 +109,49 @@ class ZipDNA(
             fields = fields
         )
     }
+
+    private fun computeMinHash(){
+        // Shingles
+        val shingles = shinglise((classNames + fieldNames + methodNames), 3, 30)
+        // Compute MinHash
+        val signature = minHash(shingles.toSet(), 128, 12345L)
+        
+    }
+
+    private fun <T> shinglise(tokens: Set<T>, k: Int, n: Int): List<Int> {
+        val shingles = tokens
+            .windowed(k, 1) // sliding window of size k
+            .map { it.hashCode() } // hash each shingle
+
+        return if (shingles.size >= n) {
+            shingles.shuffled().take(n) // downsample
+        } else {
+            shingles + List(n - shingles.size) { 0 } // pad
+        }
+    }
+
+    private fun minHash(shingles: Set<Int>, numHashes: Int, seed: Long = 0L): LongArray {
+        require(numHashes > 0) { "numHashes must be > 0" }
+
+        val rnd = Random(seed)
+        val seeds = LongArray(numHashes) { rnd.nextLong() }
+
+        val signature = LongArray(numHashes) { -1L }
+
+        for (shingle in shingles) {
+            val sh = shingle.toLong()
+            for (i in 0 until numHashes) {
+                val combined = sh xor seeds[i] // 64-bit mixing
+                if (java.lang.Long.compareUnsigned(combined, signature[i]) < 0) {
+                    signature[i] = combined
+                }
+            }
+        }
+        return signature
+    }
+
+
+
 
     fun buildDNA(): DNA {
         return DNA(
