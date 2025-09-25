@@ -61,9 +61,12 @@ fun main(){
     val dart1Json = "C:\\Users\\jayce\\Documents\\Scripts\\dna\\data\\out\\dart1.json"
     val zipPath : String = azurePath
 
-    val dna : ZipDNA = ZipDNA(zipPath)
-    dna.tokenize()
-    dna.writeToJSON(azureJson)
+    val outPutList = CompareOneToManyDNA(dart2Json).compare()
+    println(outPutList)
+
+//    val dna : ZipDNA = ZipDNA(zipPath)
+//    dna.tokenize()
+//    dna.writeToJSON(azureJson)
 //
 //    val comparisonResult = CompareOneToOneDNA(dart1Json, dart2Json).compare()
 //    println("Field Similarity : ${comparisonResult.fieldSimilarity}")

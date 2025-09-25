@@ -1,5 +1,7 @@
 package org.example
 
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import java.security.MessageDigest
 import java.util.zip.ZipEntry
 import java.util.zip.ZipFile
@@ -25,4 +27,18 @@ fun hashZipEntry(zipFile : ZipFile, entry : ZipEntry, algorithm : String = "SHA-
 
     // Hash the digest as convert to understandable hex
     return digest.digest().joinToString("") {"%02x".format(it)}
+}
+
+// Global Management
+fun loadGlobal(globalPath : String): Global {
+    val file = java.io.File(globalPath)
+    return if (file.exists()) {
+        val text = file.readText()
+        Json.decodeFromString(Global.serializer(), text)
+    } else Global()
+}
+
+fun saveGlobal(global: Global, globalPath : String) {
+    val json = Json { prettyPrint = true }.encodeToString(global)
+    java.io.File(globalPath).writeText(json)
 }

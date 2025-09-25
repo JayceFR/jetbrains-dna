@@ -24,21 +24,8 @@ class ZipDNA(
     private var totalMethods = 0
     private var totalFields = 0
 
-    private fun loadGlobal(): Global {
-        val file = JFile(globalPath)
-        return if (file.exists()) {
-            val text = file.readText()
-            Json.decodeFromString(Global.serializer(), text)
-        } else Global()
-    }
-
-    private fun saveGlobal(global: Global) {
-        val json = Json { prettyPrint = true }.encodeToString(global)
-        JFile(globalPath).writeText(json)
-    }
-
     private fun registerDNA(dna: DNA, path: String) {
-        val global = loadGlobal()
+        val global = loadGlobal(globalPath)
         val dnaId = global.noOfDNAs + 1
         dna.id = dnaId
         global.aboutDNA[dnaId] = path
@@ -46,7 +33,7 @@ class ZipDNA(
             global.bucket.computeIfAbsent(bucket) { mutableListOf() }.add(dnaId)
         }
         global.noOfDNAs = dnaId
-        saveGlobal(global)
+        saveGlobal(global, globalPath)
     }
 
     fun tokenize(zFile: ZipFile = zipFile, prefix: String = "") {
