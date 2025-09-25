@@ -73,7 +73,7 @@ Ran my tokeniser using the following commands
 So now we have each file with its own .json and each .json contains information about the zip folder including id, buckets, class names, method names, field names, and file properties.
 <img src="assets/img2.gif" alt="Architecture Diagram" width="500"/>
 
-Now running the one to one comparison between azure and dart we get
+Now running the **one to one comparison** between azure and dart we get
 ```bash
 > java -jar $jarPath compare .\data\out\azure.json .\data\out\dart1.json
   Comparison Result with dart-251.27623.5
@@ -139,7 +139,7 @@ And running it between dart-253.17524.83 and dart-252.22441.25 we get
    Overall: 99.56% 
 ```
 
-Now running the one to many test for dart-253.22441.25 we get 
+Now running the **one to many** comparison for dart-253.22441.25 we get 
 ```bash
 >  java -jar $jarPath compare-many .\data\out\dart3.json
 Alert! Matches found! with the following plugins :
