@@ -14,7 +14,7 @@ class CompareOneToManyDNA(
     // Holds the ids of the dna that match
     private val outputSet : MutableSet<Int> = mutableSetOf()
 
-    fun compare() : Set<Int>{
+    fun compare() : List<ComparisonResult>{
         val global = loadGlobal(globalPath)
         dna.bucketIndices.forEach { bucketIdx ->
             global.bucket[bucketIdx]?.forEach { element ->
@@ -22,6 +22,14 @@ class CompareOneToManyDNA(
             }
         }
         outputSet.remove(dna.id)
-        return outputSet
+        val returnList : MutableList<ComparisonResult> = mutableListOf()
+        outputSet.forEach { element ->
+            global.aboutDNA[element]?.let { otherDNAPath ->
+                returnList.add(
+                    CompareOneToOneDNA(path, otherDNAPath).compare()
+                )
+            }
+        }
+        return returnList
     }
 }
